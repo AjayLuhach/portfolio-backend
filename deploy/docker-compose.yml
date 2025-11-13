@@ -1,0 +1,133 @@
+version: "3.9"
+
+x-common-env: &common-env
+  APP_ENV: development
+  HTTP_PORT: 8080
+
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: gateway
+    environment:
+      <<: *common-env
+      AUTH_SERVICE_URL: http://auth:8080
+      BLOG_SERVICE_URL: http://blog:8080
+      INTERACTION_SERVICE_URL: http://interaction:8080
+      NOTIFICATION_SERVICE_URL: http://notification:8080
+      ANALYTICS_SERVICE_URL: http://analytics:8080
+      BOOKMARK_SERVICE_URL: http://bookmark:8080
+      SEARCH_SERVICE_URL: http://search:8080
+    depends_on:
+      - auth
+      - blog
+      - interaction
+      - notification
+      - analytics
+      - bookmark
+      - search
+    ports:
+      - "9000:8080"
+    networks: [mesh]
+
+  auth:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: auth
+    environment:
+      <<: *common-env
+    ports:
+      - "9101:8080"
+    networks: [mesh]
+
+  blog:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: blog
+    environment:
+      <<: *common-env
+    ports:
+      - "9102:8080"
+    networks: [mesh]
+
+  interaction:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: interaction
+    environment:
+      <<: *common-env
+    ports:
+      - "9103:8080"
+    networks: [mesh]
+
+  notification:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: notification
+    environment:
+      <<: *common-env
+    ports:
+      - "9104:8080"
+    networks: [mesh]
+
+  analytics:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: analytics
+    environment:
+      <<: *common-env
+    ports:
+      - "9105:8080"
+    networks: [mesh]
+
+  bookmark:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: bookmark
+    environment:
+      <<: *common-env
+    ports:
+      - "9106:8080"
+    networks: [mesh]
+
+  search:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: search
+    environment:
+      <<: *common-env
+    ports:
+      - "9107:8080"
+    networks: [mesh]
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: worker
+    environment:
+      <<: *common-env
+    ports:
+      - "9201:8080"
+    networks: [mesh]
+
+networks:
+  mesh:
+    driver: bridge
