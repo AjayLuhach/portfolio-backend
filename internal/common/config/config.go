@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+// This package centralizes how every service reads configuration. The pattern is:
+//   * Define strongly typed sections (HTTP, Database, Cache, etc.).
+//   * Populate them via `Load`, which checks for <SERVICE>_ overrides and then falls
+//     back to global env vars or sane defaults (see defaultPorts below).
+//   * Pass the resulting ServiceConfig down through bootstrap so the rest of the
+//     layers can focus on business logic rather than env parsing.
+
 var defaultPorts = map[string]int{
 	"gateway":      9000,
 	"auth":         9101,
@@ -71,6 +78,14 @@ type ObservabilityConfig struct {
 }
 
 // Load assembles a ServiceConfig using environment overrides.
+//
+// Order of precedence for each setting:
+//   1. <SERVICE>_ scoped env var (e.g. AUTH_HTTP_PORT).
+//   2. Global env var (e.g. HTTP_PORT) if available.
+//   3. Hard-coded defaults (ports live in defaultPorts; others inline below).
+//
+// The map lookups + helpers at the bottom keep all parsing (ints/durations) in one
+// place which simplifies validation/testing later.
 func Load(service string) ServiceConfig {
 	port := defaultPorts[service]
 	if port == 0 {

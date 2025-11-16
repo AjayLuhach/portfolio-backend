@@ -93,6 +93,17 @@ The helper downloads Go to `/usr/local/go` (may prompt for sudo) and prints `PAT
 - Transports: HTTP handlers decode/validate JSON, call app services, and write responses via `pkg/httpx`.
 - Events: `pkg/events` lists canonical event names (`user.signed_up`, `blog.published`, etc.) and the `Envelope` shape to keep async messaging consistent when real brokers are added.
 
+## Walkthrough: Analytics Service (end-to-end)
+Use this service as the template for reading the others—the structure is identical.
+
+1. **Entrypoint** (`cmd/analytics/main.go`): imports only `bootstrap` and the analytics `module`. `main()` calls `bootstrap.Run("analytics", module.Registrar())`; bootstrap handles config/log/router/server while the module wires service-specific parts.
+2. **Module/Registrar** (`internal/analytics/module/module.go`): exposes a `Registrar` func (matching the type in `internal/common/bootstrap`). It receives the resolved `config.ServiceConfig`, a scoped logger, and the chi router. Inside it constructs the app service (`app.NewService(log)`) and passes it to the HTTP transport's `Register` helper.
+3. **Domain layer** (`internal/analytics/domain/metrics.go`): holds plain structs shared between transports + business logic. JSON tags (`json:"blogId"`) ensure request/response bodies map cleanly onto the Go struct.
+4. **App layer** (`internal/analytics/app/service.go`): implements methods like `Record` and `Fetch`. The file only imports `context`, `log/slog`, `time`, and the domain package, which keeps business logic free from HTTP concerns. `NewService` is where real adapters (DB/cache) would be injected; comments in the file call this out.
+5. **Transport layer** (`internal/analytics/transport/http/handler.go`): imports chi for routing, encoding/json for decoding payloads, and the shared `pkg/httpx` helper for consistent responses. `Register` hangs two routes off `/analytics`. `handler.record` shows the typical flow—decode JSON, call app service, write response/error—while `handler.fetch` demonstrates path params with `chi.URLParam`.
+
+Because every service follows the same layout you can swap "analytics" with "auth", "blog", etc., and navigate confidently: `cmd` → `module` → `app`/`domain`/`transport`. The inline comments recently added to those files mirror the explanation above.
+
 ## Extending This Scaffold
 - Wire real adapters: replace `pkg/db.NopStore` and `pkg/cache.MemoryCache` with PostgreSQL/Redis clients; inject them into app services.
 - Add messaging: integrate NATS/RabbitMQ/Kafka using `pkg/events`, push events from app services, and subscribe in the worker/notification services.

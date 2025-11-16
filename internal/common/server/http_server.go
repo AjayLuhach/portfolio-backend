@@ -15,6 +15,9 @@ type HTTPServer struct {
 	log    *slog.Logger
 }
 
+// NewHTTPServer wraps the chi router with sensible timeouts supplied by config.
+// It deliberately keeps the struct tiny so swapping the http.Handler (REST vs gRPC
+// proxies, etc.) stays trivial.
 func NewHTTPServer(cfg config.ServiceConfig, handler http.Handler, log *slog.Logger) *HTTPServer {
 	return &HTTPServer{
 		server: &http.Server{
@@ -28,6 +31,10 @@ func NewHTTPServer(cfg config.ServiceConfig, handler http.Handler, log *slog.Log
 }
 
 // Start launches the HTTP server and blocks until it stops or the context is cancelled.
+//
+// The context usually comes from bootstrap, which wires SIGINT/SIGTERM into the
+// cancellation path. When cancellation happens we shut down gracefully with a
+// 5-second timeout so in-flight requests get a chance to finish.
 func (s *HTTPServer) Start(ctx context.Context) error {
 	shutdownCh := make(chan struct{})
 	go func() {

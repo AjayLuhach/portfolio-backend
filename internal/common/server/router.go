@@ -10,6 +10,14 @@ import (
 )
 
 // NewRouter configures a chi router with shared middleware.
+//
+// The stack mirrors what you'd normally register in main():
+//   * RequestID and RealIP provide traceable request metadata.
+//   * Timeout + Recoverer prevent handlers from hanging and crashing the process.
+//   * The final inline middleware adds structured request logs via slog.
+//
+// Individual services only need to worry about their own routes; the plumbing is
+// consistent everywhere because bootstrap always calls this constructor.
 func NewRouter(log *slog.Logger) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)

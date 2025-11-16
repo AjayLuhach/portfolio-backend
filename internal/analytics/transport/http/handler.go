@@ -23,6 +23,10 @@ type handler struct {
 	svc *app.Service
 }
 
+// record -> POST /analytics
+// * Decodes the JSON body into domain.Metrics.
+// * Delegates to app.Service.Record which stamps timestamps + logging.
+// * Returns the created payload with HTTP 201.
 func (h handler) record(w http.ResponseWriter, r *http.Request) {
 	var payload domain.Metrics
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -37,6 +41,9 @@ func (h handler) record(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusCreated, metrics)
 }
 
+// fetch -> GET /analytics/blog/{id}
+// * Pulls the URL param via chi.
+// * Calls app.Service.Fetch and surfaces either the metrics or a 500 error.
 func (h handler) fetch(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	metrics, err := h.svc.Fetch(r.Context(), id)
